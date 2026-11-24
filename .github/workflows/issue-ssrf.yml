@@ -9,6 +9,7 @@ jobs:
   close:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Start local canary HTTP service
         run: |
           mkdir -p /tmp/canary
@@ -16,24 +17,9 @@ jobs:
           nohup python3 -m http.server 8123 --directory /tmp/canary > /tmp/canary_access.log 2>&1 &
           sleep 2
           curl -s -o /dev/null -w "selfcheck=%{http_code}\n" http://127.0.0.1:8123/
-      - name: Replica of close-invalid-link.cjs fetch(link)
+      - name: Replica fetch (close-invalid-link.cjs sink)
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
-        run: |
-          node - <<'JS'
-          const body = process.env.ISSUE_BODY || '';
-          const i = body.indexOf('http');
-          const nl = body.indexOf('\n', i);
-          const link = i === -1 ? '' : body.substring(i, nl === -1 ? body.length : nl);
-          console.log('LINK=' + JSON.stringify(link));
-          (async () => {
-            try {
-              const r = await fetch(link);
-              console.log('SSRF_FETCH status=' + r.status + ' ok=' + r.ok + ' url=' + link);
-            } catch (e) {
-              console.log('SSRF_FETCH_ERROR ' + e.message + ' url=' + link);
-            }
-          })();
-      JS
-      - name: Show local canary access log
-        run: cat /tmp/canary_access.log || true
+        run: node .github/scripts/close-invalid-link-replica.mjs
+      - name: Show canary access log
+        run: cat /tmp/canary_access.log
