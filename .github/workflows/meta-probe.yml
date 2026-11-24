@@ -1,0 +1,11 @@
+name: ssrf-meta-probe
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe metadata endpoints (blind status only)
+        run: |
+          node -e 'const t=["http://169.254.169.254/latest/meta-data/","http://169.254.169.254/metadata/instance?api-version=2021-02-01","http://metadata.google.internal/computeMetadata/v1/","http://100.100.100.200/latest/meta-data/","http://127.0.0.1:80/","http://127.0.0.1:8080/","http://localhost:2375/version","http://[::1]:80/"];(async()=>{for(const u of t){try{const r=await fetch(u,{signal:AbortSignal.timeout(4000)});console.log("PROBE",u,"status="+r.status,"ok="+r.ok)}catch(e){console.log("PROBE",u,"ERR",e.name,e.message)}}})()'
